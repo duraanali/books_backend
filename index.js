@@ -43,6 +43,11 @@ app.get('/books', (req, res) => {
 
 // Add a new book
 app.post('/books', authenticateToken, (req, res) => {
+  // Ensure user is logged in before adding a book
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
   const { title, author, price, image } = req.body;
   const userId = req.user.id;
   const query =
@@ -59,6 +64,11 @@ app.post('/books', authenticateToken, (req, res) => {
 
 // Update a book
 app.put('/books/:id', authenticateToken, (req, res) => {
+  // Ensure user is logged in before updating a book
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
   const { id } = req.params;
   const { title, author, price, image } = req.body;
   const query =
@@ -82,6 +92,11 @@ app.put('/books/:id', authenticateToken, (req, res) => {
 
 // Delete a book
 app.delete('/books/:id', authenticateToken, (req, res) => {
+  // Ensure user is logged in before deleting a book
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
   const { id } = req.params;
   const query = 'DELETE FROM books WHERE id = ? AND user_id = ?';
   const userId = req.user.id;
@@ -94,6 +109,27 @@ app.delete('/books/:id', authenticateToken, (req, res) => {
       return res.status(404).json({ error: 'Book not found or unauthorized' });
     }
     res.json({ message: 'Book deleted successfully' });
+  });
+});
+
+// Get the current logged-in user information
+app.get('/user', authenticateToken, (req, res) => {
+  // Ensure user is logged in before retrieving user information
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  const userId = req.user.id;
+  const query = 'SELECT id, name, email FROM users WHERE id = ?';
+  db.get(query, [userId], (error, row) => {
+    if (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'An error occurred' });
+    }
+    if (!row) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.json(row);
   });
 });
 
@@ -189,3 +225,4 @@ function authenticateToken(req, res, next) {
 app.listen(port, () => {
   console.log(`Book store app listening at http://localhost:${port}`);
 });
+
